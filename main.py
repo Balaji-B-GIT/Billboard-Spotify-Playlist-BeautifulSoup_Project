@@ -14,12 +14,14 @@ redirect_url = os.getenv("redirect_url")
 date = input("Type the date in this format YYYY-MM-DD: ")
 BILLBOARD_URL = f"https://www.billboard.com/charts/hot-100/{date}/"
 
+# using below code to authenticate ourself using credentials got from spotify and we get user_id as output
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=spotify_client_id,
                                                        client_secret=spotify_client_secret,
                                                        redirect_uri=redirect_url,
                                                        scope="playlist-modify-private",
                                                        cache_path="token.txt"))
 
+# sp_search is used for searching tracks
 client_credentials_manager = SpotifyClientCredentials(
             client_id=spotify_client_id,
             client_secret=spotify_client_secret
@@ -31,6 +33,7 @@ headers = {
 }
 response = requests.get(BILLBOARD_URL, headers=headers)
 soup = BeautifulSoup(response.content, "html.parser")
+# below we scarp the html code of Billboard site
 top_songs = soup.select("h3.c-title.a-no-trucate")
 top_artists = soup.select("span.c-label.a-no-trucate")
 top_100_songs = []
@@ -50,14 +53,17 @@ for (song_name,artist) in song_artist_dict.items():
     for symbol in ["Featuring", "&", "x", "X", "("]:
         if symbol in artist:
             artist = artist.split(symbol)[0]
+    # below code is used to search tracks using song title and artist
     results = sp_search.search(q=f'track: {song_name} artist: {artist}',type='track',limit=1,offset=0)
     try:
+        # here we extract uri,which is used for adding that song in a playlist
         song_uri= results["tracks"]["items"][0]["uri"]
         all_songs_uri.append(song_uri)
     except IndexError:
         print(f"no song found on this title - {song_name}")
-print(all_songs_uri)
-# playlist_name = "BillBoard Playlist"
+
+# # Below code is used to create a new playlist
+playlist_name = "BillBoard Playlist"
 # playlist_description = "A playlist created with Spotipy using BillBoard Scarping!"
 # playlist = sp.user_playlist_create(user=user_id,
 #                                    name=playlist_name,
@@ -67,3 +73,4 @@ print(all_songs_uri)
 # print(f"Created Playlist: {playlist['name']} with id: {playlist['id']}")
 playlist_id = "2UdBAtOnbUuMQnOxCNLVXj"
 add_track = sp.playlist_add_items(playlist_id=playlist_id,items=all_songs_uri)
+print(f"All Songs are added successfully to {playlist_name}")
